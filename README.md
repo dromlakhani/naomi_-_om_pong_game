@@ -2,6 +2,8 @@
 
 ## A Father-Daughter Coding Adventure!
 
+![Naomi and Om's Pong Game in Action](https://i.ibb.co/rmq8bHp/Clean-Shot-2024-07-24-at-20-37-11.gif)
+
 ### Creators:
 - Naomi Lakhani (11 years old) - The Pong Prodigy 👧
 - Dr. Om J Lakhani (40 years old) - The Coding Guru 👨‍⚕️
@@ -58,4 +60,4 @@ Naomi and Om are already planning their next coding project. Will it be a space 
 
 Remember, whether you're 11 or 40, it's never too early or too late to start coding. Who knows? Your next family game night might just involve creating the game itself!
 
-Happy Coding and Happy Playing! 🎮👨‍👧'
+Happy Coding and Happy Playing! 🎮👨‍👧
