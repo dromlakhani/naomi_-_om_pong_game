@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naomi and Om's Pong Game</title>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #gameCanvas {
+            border: 3px solid #333;
+            margin: 20px auto;
+            background-color: #e6f7ff;
+        }
+        h1 {
+            text-align: center;
+            color: #4a4a4a;
+        }
+        #rules {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Naomi and Om's Pong Game</h1>
+    <div id="rules">First player to score 7 points wins the game!</div>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game objects
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 10,
+            dx: 5,
+            dy: 5,
+            color: '#ff6b6b'
+        };
+
+        const paddleHeight = 100;
+        const paddleWidth = 10;
+
+        const leftPaddle = {
+            x: 30,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            dy: 5,
+            color: '#4ecdc4'
+        };
+
+        const rightPaddle = {
+            x: canvas.width - paddleWidth - 30,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: '#45b7d1'
+        };
+
+        let leftScore = 0;
+        let rightScore = 0;
+        let gameOver = false;
+        let winner = '';
+
+        // Key states
+        const keys = {};
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseY = e.clientY - rect.top - rightPaddle.height / 2;
+            rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.height, mouseY));
+        });
+
+        // Game loop
+        function gameLoop() {
+            if (!gameOver) {
+                update();
+            }
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            // Move left paddle
+            if (keys['ArrowUp'] && leftPaddle.y > 0) {
+                leftPaddle.y -= leftPaddle.dy;
+            }
+            if (keys['ArrowDown'] && leftPaddle.y < canvas.height - leftPaddle.height) {
+                leftPaddle.y += leftPaddle.dy;
+            }
+
+            // Move ball
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Ball collision with top and bottom walls
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.dy = -ball.dy;
+            }
+
+            // Ball collision with paddles
+            if (
+                (ball.x - ball.radius < leftPaddle.x + leftPaddle.width && ball.y > leftPaddle.y && ball.y < leftPaddle.y + leftPaddle.height) ||
+                (ball.x + ball.radius > rightPaddle.x && ball.y > rightPaddle.y && ball.y < rightPaddle.y + rightPaddle.height)
+            ) {
+                ball.dx = -ball.dx;
+            }
+
+            // Score points
+            if (ball.x + ball.radius > canvas.width) {
+                leftScore++;
+                checkWinner();
+                resetBall();
+            } else if (ball.x - ball.radius < 0) {
+                rightScore++;
+                checkWinner();
+                resetBall();
+            }
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background
+            ctx.fillStyle = '#e6f7ff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw middle line
+            ctx.beginPath();
+            ctx.setLineDash([5, 15]);
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = '#333';
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw paddles
+            ctx.fillStyle = leftPaddle.color;
+            ctx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
+            ctx.fillStyle = rightPaddle.color;
+            ctx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
+
+            // Draw ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.fill();
+            ctx.closePath();
+
+            // Draw scores
+            ctx.font = 'bold 24px Arial';
+            ctx.fillStyle = '#333';
+            ctx.fillText(leftScore, canvas.width / 4, 30);
+            ctx.fillText(rightScore, 3 * canvas.width / 4, 30);
+
+            // Draw instructions
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#666';
+            ctx.fillText('Naomi: Use Up/Down arrow keys', 10, canvas.height - 20);
+            ctx.fillText('Om: Use mouse', canvas.width - 150, canvas.height - 20);
+
+            // Draw cartoon characters
+            drawLittleGirl(80, canvas.height - 120);
+            drawBeardedMan(canvas.width - 120, canvas.height - 120);
+
+            // Draw celebration and winner announcement
+            if (gameOver) {
+                drawCelebration();
+                announceWinner();
+            }
+        }
+
+        function drawLittleGirl(x, y) {
+            ctx.fillStyle = '#ffd1dc';  // Light pink
+            ctx.beginPath();
+            ctx.arc(x, y, 30, 0, Math.PI * 2);  // Head
+            ctx.fill();
+
+            ctx.fillStyle = '#8b4513';  // Brown
+            ctx.fillRect(x - 20, y + 30, 40, 50);  // Body
+
+            ctx.strokeStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(x - 10, y - 5, 5, 0, Math.PI * 2);  // Left eye
+            ctx.arc(x + 10, y - 5, 5, 0, Math.PI * 2);  // Right eye
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(x, y + 10, 10, 0, Math.PI);  // Smile
+            ctx.stroke();
+
+            ctx.fillStyle = '#8b4513';  // Brown
+            ctx.fillRect(x - 30, y - 20, 60, 15);  // Hair
+        }
+
+        function drawBeardedMan(x, y) {
+            ctx.fillStyle = '#f4a460';  // Sandy brown
+            ctx.beginPath();
+            ctx.arc(x, y, 30, 0, Math.PI * 2);  // Head
+            ctx.fill();
+
+            ctx.fillStyle = '#4682b4';  // Steel blue
+            ctx.fillRect(x - 25, y + 30, 50, 60);  // Body
+
+            ctx.strokeStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(x - 10, y - 5, 5, 0, Math.PI * 2);  // Left eye
+            ctx.arc(x + 10, y - 5, 5, 0, Math.PI * 2);  // Right eye
+            ctx.stroke();
+
+            ctx.fillStyle = '#8b4513';  // Brown
+            ctx.beginPath();
+            ctx.moveTo(x - 25, y + 15);
+            ctx.lineTo(x, y + 40);
+            ctx.lineTo(x + 25, y + 15);
+            ctx.fill();  // Beard
+
+            ctx.fillStyle = '#8b4513';  // Brown
+            ctx.fillRect(x - 30, y - 30, 60, 20);  // Hair
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = -ball.dx;
+        }
+
+        function checkWinner() {
+            if (leftScore >= 7) {
+                gameOver = true;
+                winner = 'Naomi';
+            } else if (rightScore >= 7) {
+                gameOver = true;
+                winner = 'Om';
+            }
+        }
+
+        function drawCelebration() {
+            for (let i = 0; i < 100; i++) {
+                ctx.beginPath();
+                ctx.arc(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height,
+                    Math.random() * 5,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                ctx.fill();
+            }
+        }
+
+        function announceWinner() {
+            ctx.font = 'bold 48px Arial';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${winner} wins!`, canvas.width / 2, canvas.height / 2);
+            ctx.font = '24px Arial';
+            ctx.fillText('Refresh the page to play again', canvas.width / 2, canvas.height / 2 + 40);
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
